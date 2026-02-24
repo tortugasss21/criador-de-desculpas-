@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gerador de Desculpas</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#0a0a0a;
+    --card:#131313;
+    --border:rgba(255,255,255,.08);
+    --yellow:#f5e642;
+    --green:#42f587;
+    --pink:#ff3e8e;
+    --blue:#3ef5f5;
+    --white:#f0f0f0;
+    --dim:rgba(255,255,255,.35);
+  }
+
+  body{
+    background:var(--bg);color:var(--white);
+    font-family:'Nunito',sans-serif;
+    min-height:100vh;overflow-x:hidden;
+  }
+
+  body::before{
+    content:'';position:fixed;inset:0;pointer-events:none;
+    background:
+      radial-gradient(ellipse at 15% 15%, rgba(245,230,66,.05) 0%, transparent 55%),
+      radial-gradient(ellipse at 85% 85%, rgba(66,245,135,.05) 0%, transparent 55%);
+  }
+
+  @keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes pop{0%{opacity:0;transform:scale(.94) translateY(10px)}100%{opacity:1;transform:scale(1) translateY(0)}}
+  @keyframes shimmer{0%{background-position:-200% center}100%{background-position:200% center}}
+  @keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+  @keyframes glitch{0%,88%,100%{text-shadow:none}91%{text-shadow:-2px 0 var(--pink),2px 0 var(--blue)}95%{text-shadow:2px 0 var(--pink),-2px 0 var(--blue)}}
+
+  /* marquee */
+  .marquee{overflow:hidden;white-space:nowrap;padding:9px 0;background:rgba(255,255,255,.02);border-bottom:1px solid var(--border)}
+  .marquee-inner{display:inline-block;animation:marqueeScroll 22s linear infinite}
+  @keyframes marqueeScroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+  .marquee-inner span{font-size:11px;letter-spacing:.2em;color:rgba(255,255,255,.15);font-weight:900;margin:0 28px;text-transform:uppercase}
+
+  /* layout */
+  .container{max-width:680px;margin:0 auto;padding:0 20px 80px}
+
+  /* header */
+  header{text-align:center;padding:52px 0 36px;animation:fadeUp .5s ease both}
+  .badge{display:inline-block;background:var(--yellow);color:#000;font-size:10px;font-weight:900;letter-spacing:.22em;text-transform:uppercase;padding:4px 14px;border-radius:3px;margin-bottom:18px}
+  h1{font-family:'Bebas Neue',cursive;font-size:clamp(48px,11vw,96px);line-height:.9;animation:glitch 6s infinite}
+  h1 em{color:var(--yellow);font-style:normal;display:block}
+  .header-sub{color:var(--dim);font-size:15px;margin-top:14px;font-weight:700;letter-spacing:.04em}
+
+  /* input area */
+  .input-section{animation:fadeUp .5s ease .1s both}
+  .input-label{font-size:12px;font-weight:900;letter-spacing:.18em;color:var(--dim);text-transform:uppercase;margin-bottom:10px}
+
+  .input-wrap{position:relative}
+  textarea{
+    width:100%;min-height:90px;
+    background:var(--card);
+    border:1.5px solid var(--border);
+    border-radius:14px;
+    color:var(--white);
+    font-family:'Nunito',sans-serif;font-size:17px;font-weight:700;
+    padding:18px 20px;padding-bottom:56px;
+    outline:none;resize:none;
+    transition:border-color .2s;
+    line-height:1.5;
+  }
+  textarea::placeholder{color:rgba(255,255,255,.2)}
+  textarea:focus{border-color:rgba(245,230,66,.35)}
+
+  .char-count{position:absolute;bottom:60px;right:16px;font-size:11px;color:rgba(255,255,255,.2);font-weight:700}
+
+  /* category pills inside input area */
+  .pills{
+    position:absolute;bottom:12px;left:12px;
+    display:flex;gap:6px;
+  }
+  .pill{
+    padding:5px 12px;border-radius:20px;
+    font-size:11px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;
+    border:1.5px solid var(--border);background:transparent;color:var(--dim);
+    cursor:pointer;transition:all .15s;
+  }
+  .pill:hover{border-color:rgba(255,255,255,.25);color:#fff}
+  .pill.active{color:#000;border-color:transparent}
+  .pill[data-c="trabalho"].active{background:var(--blue)}
+  .pill[data-c="escola"].active{background:var(--green)}
+  .pill[data-c="namoro"].active{background:var(--pink)}
+  .pill[data-c="outro"].active{background:var(--yellow)}
+
+  /* generate button */
+  .gen-btn{
+    width:100%;margin-top:12px;
+    padding:18px;
+    background:var(--yellow);color:#000;
+    font-family:'Bebas Neue',cursive;font-size:26px;letter-spacing:.1em;
+    border:none;border-radius:14px;cursor:pointer;
+    transition:all .2s;
+    display:flex;align-items:center;justify-content:center;gap:10px;
+  }
+  .gen-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 8px 32px rgba(245,230,66,.2)}
+  .gen-btn:active:not(:disabled){transform:scale(.98)}
+  .gen-btn:disabled{opacity:.5;cursor:not-allowed}
+
+  .spinner{width:22px;height:22px;border:3px solid rgba(0,0,0,.2);border-top-color:#000;border-radius:50%;animation:spin .7s linear infinite;display:none}
+  .gen-btn.loading .spinner{display:block}
+  .gen-btn.loading .btn-text{display:none}
+
+  /* examples */
+  .examples{margin-top:14px;display:flex;flex-wrap:wrap;gap:7px;animation:fadeUp .5s ease .2s both}
+  .ex-chip{
+    padding:7px 14px;border-radius:20px;
+    background:rgba(255,255,255,.04);border:1px solid var(--border);
+    font-size:13px;color:var(--dim);cursor:pointer;transition:all .15s;font-weight:700;
+  }
+  .ex-chip:hover{background:rgba(255,255,255,.09);color:#fff;border-color:rgba(255,255,255,.2)}
+
+  /* result */
+  .result-section{margin-top:28px;display:none;animation:pop .35s cubic-bezier(.175,.885,.32,1.275) both}
+  .result-section.show{display:block}
+
+  .result-card{
+    background:var(--card);
+    border:1.5px solid var(--border);
+    border-radius:18px;overflow:hidden;
+  }
+
+  .result-header{
+    padding:14px 20px;
+    display:flex;align-items:center;justify-content:space-between;
+    border-bottom:1px solid var(--border);
+  }
+  .result-header-left{display:flex;align-items:center;gap:8px}
+  .result-dot{width:8px;height:8px;border-radius:50%;background:var(--green);animation:blink 2s infinite}
+  .result-label{font-size:10px;font-weight:900;letter-spacing:.2em;color:var(--dim);text-transform:uppercase}
+
+  .believability{display:flex;align-items:center;gap:8px}
+  .bel-label{font-size:10px;font-weight:900;letter-spacing:.12em;color:var(--dim);text-transform:uppercase}
+  .bel-stars{font-size:14px;letter-spacing:2px}
+
+  .result-body{padding:28px 24px}
+
+  .result-text{
+    font-size:clamp(17px,2.8vw,21px);font-weight:700;line-height:1.7;
+    color:var(--white);
+  }
+
+  .result-footer{
+    padding:16px 24px;
+    border-top:1px solid var(--border);
+    display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:space-between;
+  }
+  .action-btn{
+    padding:10px 18px;border-radius:9px;
+    font-size:13px;font-weight:900;letter-spacing:.06em;
+    border:none;cursor:pointer;transition:all .15s;
+  }
+  .action-btn:hover{transform:scale(1.04)}
+  .btn-copy{background:rgba(255,255,255,.07);color:var(--white)}
+  .btn-copy:hover{background:rgba(255,255,255,.13)}
+  .btn-regen{background:var(--yellow);color:#000}
+  .btn-harder{background:rgba(255,62,142,.12);color:var(--pink);border:1px solid rgba(255,62,142,.25)}
+  .btn-harder:hover{background:rgba(255,62,142,.2)}
+
+  .tip{
+    margin-top:16px;
+    padding:14px 18px;
+    background:rgba(66,245,135,.05);
+    border:1px solid rgba(66,245,135,.12);
+    border-radius:10px;
+    font-size:13px;color:rgba(66,245,135,.7);font-weight:700;
+    display:none;
+  }
+  .tip.show{display:block}
+
+  /* history */
+  .history{margin-top:32px;display:none}
+  .history.show{display:block}
+  .history-title{font-family:'Bebas Neue',cursive;font-size:18px;letter-spacing:.1em;color:rgba(255,255,255,.2);margin-bottom:10px}
+  .history-list{display:flex;flex-direction:column;gap:7px}
+  .history-item{
+    padding:12px 16px;border-radius:10px;
+    background:rgba(255,255,255,.025);border:1px solid var(--border);
+    font-size:13px;color:rgba(255,255,255,.4);font-weight:700;
+    cursor:pointer;transition:all .15s;
+    display:flex;gap:10px;align-items:flex-start;
+  }
+  .history-item:hover{background:rgba(255,255,255,.06);color:rgba(255,255,255,.75)}
+  .history-cat{font-size:9px;font-weight:900;letter-spacing:.15em;text-transform:uppercase;padding:2px 8px;border-radius:3px;background:rgba(255,255,255,.06);color:rgba(255,255,255,.3);white-space:nowrap;margin-top:2px}
+
+  @media(max-width:480px){
+    .result-footer{flex-direction:column;align-items:stretch}
+    .action-btn{text-align:center}
+  }
+</style>
+</head>
+<body>
+
+<div class="marquee">
+  <div class="marquee-inner">
+    <span>desculpa realista</span><span>ninguém vai desconfiar</span><span>100% verossímil</span><span>gerado por IA</span><span>use com responsabilidade</span><span>aprovado por nenhum professor</span>
+    <span>desculpa realista</span><span>ninguém vai desconfiar</span><span>100% verossímil</span><span>gerado por IA</span><span>use com responsabilidade</span><span>aprovado por nenhum professor</span>
+  </div>
+</div>
+
+<div class="container">
+  <header>
+    <div class="badge">✦ IA-powered</div>
+    <h1>GERADOR DE<em>DESCULPAS</em></h1>
+    <p class="header-sub">diga o que aconteceu. a IA cria uma desculpa que todo mundo acredita.</p>
+  </header>
+
+  <div class="input-section">
+    <div class="input-label">O que você precisa justificar?</div>
+    <div class="input-wrap">
+      <textarea id="userInput" maxlength="200" placeholder="ex: me atrasei pra escola, não fiz o trabalho de matemática, não fui ao encontro..." oninput="updateCount()"></textarea>
+      <div class="char-count"><span id="charCount">0</span>/200</div>
+      <div class="pills">
+        <button class="pill active" data-c="escola" onclick="selectPill(this)">🎒 Escola</button>
+        <button class="pill" data-c="trabalho" onclick="selectPill(this)">💼 Trabalho</button>
+        <button class="pill" data-c="namoro" onclick="selectPill(this)">💔 Namoro</button>
+        <button class="pill" data-c="outro" onclick="selectPill(this)">✦ Outro</button>
+      </div>
+    </div>
+
+    <button class="gen-btn" id="genBtn" onclick="gerar()">
+      <div class="spinner"></div>
+      <span class="btn-text">⚡ CRIAR DESCULPA</span>
+    </button>
+  </div>
+
+  <!-- Suggestions -->
+  <div class="examples">
+    <button class="ex-chip" onclick="fill('me atrasei pra escola')">me atrasei pra escola</button>
+    <button class="ex-chip" onclick="fill('não fiz o trabalho de matemática')">não fiz o trabalho de mat</button>
+    <button class="ex-chip" onclick="fill('não fui trabalhar hoje')">não fui trabalhar hoje</button>
+    <button class="ex-chip" onclick="fill('esqueci o aniversário do meu namorado')">esqueci aniversário</button>
+    <button class="ex-chip" onclick="fill('não entreguei o relatório no prazo')">relatório atrasado</button>
+    <button class="ex-chip" onclick="fill('faltei à reunião')">faltei à reunião</button>
+  </div>
+
+  <!-- Result -->
+  <div class="result-section" id="resultSection">
+    <div class="result-card">
+      <div class="result-header">
+        <div class="result-header-left">
+          <div class="result-dot"></div>
+          <span class="result-label" id="resultLabel">DESCULPA GERADA</span>
+        </div>
+        <div class="believability">
+          <span class="bel-label">Credibilidade</span>
+          <span class="bel-stars" id="belStars">⭐⭐⭐⭐⭐</span>
+        </div>
+      </div>
+      <div class="result-body">
+        <div class="result-text" id="resultText"></div>
+      </div>
+      <div class="result-footer">
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="action-btn btn-copy" onclick="copiar()">📋 Copiar</button>
+          <button class="action-btn btn-regen" onclick="gerar()">🔀 Gerar outra</button>
+        </div>
+        <button class="action-btn btn-harder" onclick="gerarMaisDetalhada()">🎭 Mais detalhada</button>
+      </div>
+    </div>
+    <div class="tip" id="tipBox"></div>
+  </div>
+
+  <!-- History -->
+  <div class="history" id="historySection">
+    <div class="history-title">GERADAS ANTES</div>
+    <div class="history-list" id="historyList"></div>
+  </div>
+</div>
+
+<script>
+  let catAtual = 'escola';
+  let historico = [];
+  let inputAtual = '';
+  let modoDetalhado = false;
+
+  function updateCount(){
+    const v = document.getElementById('userInput').value;
+    document.getElementById('charCount').textContent = v.length;
+  }
+
+  function selectPill(btn){
+    document.querySelectorAll('.pill').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    catAtual = btn.dataset.c;
+  }
+
+  function fill(txt){
+    document.getElementById('userInput').value = txt;
+    updateCount();
+    document.getElementById('userInput').focus();
+  }
+
+  async function gerar(detalhado = false){
+    const input = document.getElementById('userInput').value.trim();
+    if(!input){ shake(); return; }
+    inputAtual = input;
+    modoDetalhado = detalhado;
+    await fetchDesculpa(input, catAtual, detalhado);
+  }
+
+  function gerarMaisDetalhada(){ gerar(true); }
+
+  function shake(){
+    const ta = document.getElementById('userInput');
+    ta.style.borderColor = 'rgba(255,62,142,.6)';
+    ta.placeholder = 'escreve o que aconteceu primeiro! 👆';
+    setTimeout(()=>{ ta.style.borderColor=''; ta.placeholder='ex: me atrasei pra escola, não fiz o trabalho de matemática...'; }, 2000);
+  }
+
+  async function fetchDesculpa(situacao, contexto, detalhado){
+    const btn = document.getElementById('genBtn');
+    btn.classList.add('loading');
+    btn.disabled = true;
+
+    const detail = detalhado
+      ? 'Seja MUITO detalhada: inclua horário específico, nomes genéricos plausíveis (como "minha mãe", "o médico", "meu vizinho"), uma sequência de eventos lógica e consistente. A desculpa deve ter 3-4 frases.'
+      : 'Seja concisa: 1-2 frases, direta ao ponto.';
+
+    const prompt = `Você é um especialista em criar desculpas extremamente realistas e convincentes.
+
+Situação: "${situacao}"
+Contexto: ${contexto}
+
+Crie UMA desculpa realista que qualquer pessoa acreditaria. Regras ABSOLUTAS:
+- Soe 100% humano e natural, como algo que realmente acontece no dia a dia brasileiro
+- Nada de eventos fantásticos, animais roubando coisas, ou situações impossíveis
+- Use causas comuns: trânsito, problema de saúde, problema familiar, problema técnico/tecnológico, imprevisto doméstico
+- Tom casual e natural, como se fosse uma mensagem de WhatsApp ou conversa pessoal
+- ${detail}
+- NÃO inclua introdução, explicação ou meta-texto. Responda APENAS com a desculpa em si.
+- Primeira pessoa, falando diretamente para quem precisa ouvir a desculpa.`;
+
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1000,
+          messages: [{ role: 'user', content: prompt }]
+        })
+      });
+
+      const data = await res.json();
+      const text = data.content?.[0]?.text?.trim();
+
+      if(text){
+        mostrarResultado(text, situacao, contexto, detalhado);
+      } else {
+        mostrarErro();
+      }
+    } catch(e) {
+      mostrarErro();
+    } finally {
+      btn.classList.remove('loading');
+      btn.disabled = false;
+    }
+  }
+
+  function mostrarResultado(text, situacao, contexto, detalhado){
+    const section = document.getElementById('resultSection');
+    section.classList.remove('show');
+    void section.offsetWidth;
+    section.classList.add('show');
+
+    document.getElementById('resultText').textContent = text;
+    document.getElementById('resultLabel').textContent = contexto.toUpperCase() + ' · ' + (detalhado ? 'VERSÃO DETALHADA' : 'VERSÃO DIRETA');
+
+    // Credibility: always high (4-5 stars) since these are realistic
+    const stars = Math.random() > 0.3 ? '⭐⭐⭐⭐⭐' : '⭐⭐⭐⭐';
+    document.getElementById('belStars').textContent = stars;
+
+    // Tip
+    const tips = [
+      '💡 Dica: fale com voz calma e confiante. Não dê detalhes que não te perguntaram.',
+      '💡 Dica: envie uma print ou foto relacionada se possível — aumenta muito a credibilidade.',
+      '💡 Dica: mencione isso antes que te perguntem. Quem avisa primeiro parece mais honesto.',
+      '💡 Dica: se for mensagem, não deixe "visto" por muito tempo depois de enviar.',
+      '💡 Dica: um emoji triste ou cansado após a desculpa reforça a narrativa 😔',
+    ];
+    const tipBox = document.getElementById('tipBox');
+    tipBox.textContent = tips[Math.floor(Math.random()*tips.length)];
+    tipBox.classList.add('show');
+
+    // History
+    historico.unshift({ cat: contexto, text: text.slice(0,90)+(text.length>90?'…':''), situacao });
+    if(historico.length > 4) historico.pop();
+    renderHistory();
+
+    section.scrollIntoView({ behavior:'smooth', block:'nearest' });
+  }
+
+  function mostrarErro(){
+    const section = document.getElementById('resultSection');
+    section.classList.add('show');
+    document.getElementById('resultText').textContent = 'Ops, algo deu errado. Tenta de novo!';
+    document.getElementById('tipBox').classList.remove('show');
+  }
+
+  function copiar(){
+    const text = document.getElementById('resultText').textContent;
+    navigator.clipboard.writeText(text).then(()=>{
+      const btn = document.querySelector('.btn-copy');
+      btn.textContent = '✅ Copiado!';
+      setTimeout(()=>btn.textContent='📋 Copiar', 2000);
+    });
+  }
+
+  function renderHistory(){
+    const sec = document.getElementById('historySection');
+    const list = document.getElementById('historyList');
+    if(!historico.length){ sec.classList.remove('show'); return; }
+    sec.classList.add('show');
+    list.innerHTML = historico.map(h=>`
+      <div class="history-item">
+        <span class="history-cat">${h.cat}</span>
+        <span>${h.text}</span>
+      </div>
+    `).join('');
+  }
+</script>
+</body>
+</html>
