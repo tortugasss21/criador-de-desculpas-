@@ -320,42 +320,23 @@
     setTimeout(()=>{ ta.style.borderColor=''; ta.placeholder='ex: me atrasei pra escola, não fiz o trabalho de matemática...'; }, 2000);
   }
 
+  // ⚠️ TROQUE pela URL do seu Worker depois de configurar
+  const WORKER_URL = 'https://fancy-dew-96c2.eb004266.workers.dev/';
+
   async function fetchDesculpa(situacao, contexto, detalhado){
     const btn = document.getElementById('genBtn');
     btn.classList.add('loading');
     btn.disabled = true;
 
-    const detail = detalhado
-      ? 'Seja MUITO detalhada: inclua horário específico, nomes genéricos plausíveis (como "minha mãe", "o médico", "meu vizinho"), uma sequência de eventos lógica e consistente. A desculpa deve ter 3-4 frases.'
-      : 'Seja concisa: 1-2 frases, direta ao ponto.';
-
-    const prompt = `Você é um especialista em criar desculpas extremamente realistas e convincentes.
-
-Situação: "${situacao}"
-Contexto: ${contexto}
-
-Crie UMA desculpa realista que qualquer pessoa acreditaria. Regras ABSOLUTAS:
-- Soe 100% humano e natural, como algo que realmente acontece no dia a dia brasileiro
-- Nada de eventos fantásticos, animais roubando coisas, ou situações impossíveis
-- Use causas comuns: trânsito, problema de saúde, problema familiar, problema técnico/tecnológico, imprevisto doméstico
-- Tom casual e natural, como se fosse uma mensagem de WhatsApp ou conversa pessoal
-- ${detail}
-- NÃO inclua introdução, explicação ou meta-texto. Responda APENAS com a desculpa em si.
-- Primeira pessoa, falando diretamente para quem precisa ouvir a desculpa.`;
-
     try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
+      const res = await fetch(WORKER_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 1000,
-          messages: [{ role: 'user', content: prompt }]
-        })
+        body: JSON.stringify({ situacao, contexto, detalhado })
       });
 
       const data = await res.json();
-      const text = data.content?.[0]?.text?.trim();
+      const text = data.desculpa;
 
       if(text){
         mostrarResultado(text, situacao, contexto, detalhado);
